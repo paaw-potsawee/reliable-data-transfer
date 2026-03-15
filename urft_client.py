@@ -5,10 +5,14 @@ import time
 import os
 from typing import List
 
-# python urft_client.py <file_path> <ip> <port>
-FILE_PATH = sys.argv[1] if len(sys.argv) > 1 else "test.bin"
-UDP_IP = sys.argv[2] if len(sys.argv) > 2 else "127.0.0.1"
-UDP_PORT = int(sys.argv[3]) if len(sys.argv) > 3 else 5005
+try:
+    # python urft_client.py <file_path> <ip> <port>
+    FILE_PATH = sys.argv[1]
+    UDP_IP = sys.argv[2]
+    UDP_PORT = int(sys.argv[3])
+except:
+    print("Usage: python urft_client.py <file_path> <ip> <port>")
+    exit(2)
 
 class Sender:
     def __init__(self):
@@ -95,21 +99,25 @@ class Sender:
                     self.__sock.sendto(packet, (UDP_IP, UDP_PORT))
                     packets_sent[seq_num] = (packet, current_time)
                     
-    def send_fin(self, timeout=1.0):
+    def send_fin(self, timeout=1.0, max_retry=3):
         fin_seq = len(self.__chunks) + 1 
         packet = self.create_packet(0x02, fin_seq, b'')
         
         self.__sock.settimeout(timeout)
+        retry_count = 0
         while True:
             self.__sock.sendto(packet, (UDP_IP, UDP_PORT))
             try: 
+                # if retry_count > max_retry assume server already got everything 
+                if retry_count > max_retry:
+                    return
                 ack_packet, _ = self.__sock.recvfrom(8)
                 ack_seq = struct.unpack('!BxxxI', ack_packet)[1]
                 if ack_seq == fin_seq:
                     return
             except socket.timeout:
                 # retransmition
-                pass
+                retry_count += 1
         
     def run(self):
         if not self.read_file(FILE_PATH):

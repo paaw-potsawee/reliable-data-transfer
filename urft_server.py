@@ -3,9 +3,13 @@ import sys
 import struct
 import os
 
-# python urft_server.py <file_path> <ip> <port>
-UDP_IP = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
-UDP_PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 5005
+try:
+    # python urft_server.py <ip> <port>
+    UDP_IP = sys.argv[1]
+    UDP_PORT = int(sys.argv[2])
+except:
+    print("Usage: python urft_server.py <ip> <port>")
+    exit(2)
 
 class Recipient:
     def __init__(self):
@@ -50,7 +54,7 @@ class Recipient:
                     
                     if packet_type == 0x02: # FIN 
                         ack = struct.pack('!BxxxI', 0xFF, seq_num)
-                        self.__sock.sendto(ack, addr)
+                        # self.__sock.sendto(ack, addr)
                         print(f"File '{self.__file_path}' transfer complete!")
                         break
 
